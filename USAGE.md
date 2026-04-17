@@ -1,14 +1,14 @@
 # Användningsguide — LiaBot
 
-Öppna dashboardet på https://lia-tracker.lovable.app i webbläsaren när LiaBot körs lokalt.
+Öppna dashboardet i webbläsaren när LiaBot körs lokalt (vanligtvis http://localhost:5173).
 
-En interaktiv version av den här guiden finns direkt i dashboardet under Guide-fliken.
+En interaktiv version av den här guiden finns direkt i dashboardet under **Guide**-fliken.
 
 ---
 
 ## Steg 1 — Kontrollera att allt är igång (Inställningar)
 
-Gå till Inställningar i sidomenyn och klicka "Testa alla".
+Gå till **Inställningar** i sidomenyn och klicka **"Testa alla"**.
 
 Du ska se tre gröna bockar:
 
@@ -24,65 +24,74 @@ Du kan ändra alla inställningar direkt på sidan utan att redigera .env manuel
 
 ## Steg 2 — Sätt upp sökord (Sökord)
 
-Beskriv med egna ord vad du letar efter, t.ex:
+Gå till **Sökord** och beskriv med egna ord vad du letar efter, t.ex:
 
-  "Leta efter företag som troligen skulle kunna erbjuda en praktikplats
-   som data engineer, data scientist eller data analytics"
+> "Leta efter företag som troligen skulle kunna erbjuda en praktikplats
+> som data engineer, data scientist eller data analytics"
 
-Lägg till extra kontext om du vill: "Helst i Stockholm" eller "Intresserad av fintech".
+Lägg till extra kontext om du vill, t.ex. "Helst i Stockholm" eller "Intresserad av fintech".
 
-Klicka "Generera sökord med AI" — AI:n skapar 10-15 nyckelord anpassat till din beskrivning.
+Klicka **"Generera sökord med AI"** — AI:n skapar 10–15 nyckelord anpassade till din beskrivning.
 Du kan lägga till eller ta bort ord manuellt innan du sparar.
 
 ---
 
 ## Steg 3 — Kör en sökning (Dashboard)
 
-Klicka "Starta ny sökning" pa Dashboard-sidan.
+Klicka **"Starta ny sökning"** på Dashboard-sidan.
 
-LiaBot gor nu tre saker i foljd:
+LiaBot gör nu tre saker i följd:
 
-1. Soker JobTech API — Arbetsformedlingens databas, Platsbanken + 200+ svenska jobbsajter
-2. Skrapar karriarsidor — 30+ svenska techbolag och konsultfirmor
-3. AI-analys — Varje annons skickas till Ollama som bedomerpraktiklamplig och extraherar kontaktuppgifter
+1. **JobTech API** — Arbetsförmedlingens databas, täcker Platsbanken och 200+ svenska jobbsajter
+2. **Karriärsidor** — Besöker karriärsidorna hos 30+ svenska techbolag och konsultfirmor
+3. **AI-analys** — Varje annons bedöms av Ollama: är den LIA-relevant? Vilka kontaktuppgifter finns?
 
-Du ser realtidsloggar i Systemloggen pa Dashboard. Sokningen tar 5-20 minuter.
-Du kan byta flik och gora annat — sokningen kor i bakgrunden.
+Du ser realtidsloggar i Systemloggen på Dashboard. Sökningen tar vanligtvis 5–20 minuter.
+Du kan byta flik och göra annat — sökningen körs i bakgrunden.
 
 ---
 
-## Steg 4 — Granska resultaten (Ansokningar)
+## Steg 4 — Granska resultaten (Ansökningar)
 
-Ga till Ansokningar for en fullstandig lista over alla hittade jobb.
+Gå till **Ansökningar** för en fullständig lista över alla hittade jobb.
 
-Klicka pa en rad for att oppna detaljvyn dar du kan:
-- Lasa hela annonstexten och AI:ns analys
-- Andra status: Ny > Kontaktad > Svar mottaget > Intervju > Erbjudande
-- Lagga till egna kommentarer och nasta steg
+Klicka på en rad för att öppna detaljvyn där du kan:
+- Läsa hela annonstexten och AI:ns analys
+- Ändra status: Ny → Kontaktad → Intervju → Erbjudande
+- Lägga till egna kommentarer och nästa steg
 - Markera om du skickat ett mail
 
----
+Klicka **Spara** för att spara och stänga detaljvyn.
 
-## Steg 5 — Folj din pipeline (Dashboard)
-
-Langst ned pa Dashboard finns en kanban-tavla per status:
-
-  Ny > Kontaktad > Svar mottaget > Intervju > Erbjudande > Avbojt > Ej relevant
-
-Klicka pa ett kort for att oppna och uppdatera status.
+Filtrera listan med knapparna högst upp — visa bara relevanta, en viss status, eller sök på företagsnamn.
 
 ---
 
-## Steg 6 — Lagg till egna kallor (Kallor)
+## Steg 5 — Följ upp via Dashboard
 
-Ga till Kallor och klista in URL:en till ett foretags jobbsida.
-Exmpel: https://careers.spotify.com/
-Sidan inkluderas automatiskt i nasta sokning.
+På Dashboard visas två listor som hjälper dig hålla koll:
+
+- **Att kontakta** — Relevanta jobb du ännu inte kontaktat, sorterade efter prioritet
+- **Väntar på svar** — Jobb du kontaktat, sorterade efter skickningsdatum
+
+Klicka på ett företag för att öppna detaljvyn direkt.
+
+---
+
+## Steg 6 — Lägg till egna källor (Källor)
+
+Gå till **Källor** och klistra in URL:en till ett företags karriärsida.
+Exempel: `https://careers.spotify.com/`
+
+Sidan inkluderas automatiskt i nästa sökning.
 
 ---
 
 ## Uppdatera till senaste versionen
 
-Ga till Installningar och klicka "Hamta senaste versionen".
-Din .env och sparade jobb paverkas aldrig.
+Gå till **Inställningar** och klicka **"Hämta senaste versionen"**.
+
+- Din .env-konfiguration påverkas aldrig
+- Dina sparade jobb och ansökningar påverkas aldrig
+
 Starta sedan om API:t via Terminal-fliken i Systemloggen.
