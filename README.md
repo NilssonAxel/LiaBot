@@ -56,41 +56,55 @@ CREATE DATABASE liabot;
 
 Standard PostgreSQL-inloggning är `postgres` / det lösenord du satte vid installation.
 
-### 4. Ladda ned AI-modellen
+### 4. Installera och starta Ollama
+
+Ladda ned Ollama från [ollama.com](https://ollama.com/) eller installera direkt via PowerShell:
+
+```powershell
+irm https://ollama.com/install.ps1 | iex
+```
+
+Starta sedan Ollama (visas i systemfältet) och ladda ned AI-modellen (~2 GB):
 
 ```powershell
 ollama pull llama3.2
 ```
 
-Modellen är ~2 GB. Kräver Ollama installerat och igång (`ollama serve`).
+### 5. Konfigurera inställningar (`.env`)
 
-### 5. Konfigurera `.env`
+Repot innehåller en fil som heter `.env.example` — det är en mall med alla inställningar.
+Du behöver skapa en kopia av den som heter `.env` och fylla i ditt PostgreSQL-lösenord.
 
-Kopiera exempelfilen och fyll i dina uppgifter:
+**Steg för steg:**
 
 ```powershell
+# 1. Kopiera mallen
 Copy-Item .env.example .env
+
+# 2. Öppna filen i Anteckningar
 notepad .env
 ```
 
-`.env`-filen ser ut så här:
+Du ser då den här filen. **Ändra bara raden med `PG_PASSWORD`** — sätt det lösenord du valde när du installerade PostgreSQL. Allt annat kan lämnas som det är om du körde standardinstallationen.
 
 ```env
 # PostgreSQL
-PG_HOST=localhost
-PG_PORT=5432
-PG_DATABASE=liabot
-PG_USER=postgres
-PG_PASSWORD=ditt-lösenord-här
+PG_HOST=localhost        # ändra ej
+PG_PORT=5432             # ändra ej
+PG_DATABASE=liabot       # ändra ej
+PG_USER=postgres         # ändra ej
+PG_PASSWORD=DITT-LÖSENORD-HÄR   # <--- ändra detta
 
 # Ollama
-OLLAMA_MODEL=llama3.2
-OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2         # ändra ej
+OLLAMA_BASE_URL=http://localhost:11434  # ändra ej
 
 # API-server
-API_HOST=0.0.0.0
-API_PORT=8002
+API_HOST=0.0.0.0   # ändra ej
+API_PORT=8002      # ändra ej
 ```
+
+Spara och stäng filen.
 
 ### 6. Starta
 
