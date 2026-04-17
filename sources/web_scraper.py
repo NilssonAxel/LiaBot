@@ -108,7 +108,7 @@ def _extract_job_links(html: str, base_url: str) -> list[str]:
 def _make_job_dict(url: str, html: str, source_name: str) -> dict:
     """Bygger ett jobb-dict från en hämtad annons-sida."""
     soup = BeautifulSoup(html, "html.parser")
-    title = soup.title.string.strip() if soup.title else url
+    title = (soup.title.get_text().strip() if soup.title else "") or url
     text = _clean_text(html)
     return {
         "source":          source_name,
