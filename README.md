@@ -34,7 +34,7 @@ LiaBot söker automatiskt igenom svenska jobbsajter och karriärsidor efter LIA-
 ### 1. Klona repot
 
 ```powershell
-git clone https://github.com/DITT-ANVÄNDARNAMN/LiaBot.git
+git clone https://github.com/GHT4ngo/LiaBot.git
 cd LiaBot
 ```
 
