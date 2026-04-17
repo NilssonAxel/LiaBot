@@ -41,7 +41,27 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/start":
-            # Start api.py as a new process (inherits this console window)
+            # Kill any process still listening on port 8002 before spawning.
+            # This prevents port conflicts when the old reloader hasn't fully
+            # exited yet (e.g. if restart was called from the in-app terminal).
+            import time
+            try:
+                subprocess.run(
+                    [
+                        "powershell", "-NoProfile", "-Command",
+                        "Get-NetTCPConnection -LocalPort 8002 -State Listen "
+                        "-ErrorAction SilentlyContinue | "
+                        "Select-Object -ExpandProperty OwningProcess | "
+                        "Sort-Object -Unique | "
+                        "ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }"
+                    ],
+                    capture_output=True,
+                    timeout=5,
+                )
+                time.sleep(0.8)  # give OS time to release the port
+            except Exception:
+                pass
+
             subprocess.Popen(
                 [sys.executable, API_SCRIPT],
                 cwd=os.path.dirname(API_SCRIPT),

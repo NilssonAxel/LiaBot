@@ -412,17 +412,34 @@ def restart_api():
     def _do_restart():
         import time, subprocess
         _log("Startar om API...", "system")
-        time.sleep(0.5)
+        time.sleep(0.3)
+
+        # Kill the uvicorn reloader (our parent process) AND all its children
+        # with /T. This frees port 8002 cleanly before we spawn a new process.
+        # Without this, the new process can't bind the port and dies immediately.
+        parent_pid = os.getppid()
+        try:
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(parent_pid)],
+                capture_output=True,
+            )
+        except Exception:
+            pass
+
+        # Give Windows time to release the port
+        time.sleep(1.5)
+
+        # Now start a fresh API via the launcher
         try:
             import httpx as _hx
-            _hx.post("http://localhost:8003/start", timeout=3)
+            _hx.post("http://localhost:8003/start", timeout=5)
         except Exception:
-            # Launcher ej tillgänglig — starta direkt
             subprocess.Popen(
                 [sys.executable, os.path.abspath(__file__)],
                 cwd=os.path.dirname(os.path.abspath(__file__)),
             )
-        os._exit(0)
+
+        os._exit(0)  # safety net — taskkill should have killed us already
 
     threading.Thread(target=_do_restart, daemon=True).start()
     return {"ok": True, "message": "Startar om..."}
