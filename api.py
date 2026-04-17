@@ -28,7 +28,7 @@ import analyzer
 app = FastAPI(
     title="LiaBot API",
     description="Hitta LIA-praktikplatser för Data Engineering",
-    version="1.0.0",
+    version="1.1.0",
 )
 
 app.add_middleware(
@@ -331,15 +331,28 @@ def keywords_from_intent(body: IntentIn):
 
 Sökavsikt: {body.intent}{extra}
 
-Generera 12-15 konkreta sökord (blandning svenska och engelska) för JobTech API:s textsökning.
+Generera 18-22 konkreta sökord för JobTech API:s textsökning, fördelade på tre kategorier:
+
+KATEGORI 1 — LIA/praktik-specifika (6-8 sökord):
+Sök direkt efter praktikanter och LIA-platser. Exempel: "LIA data", "praktikant data engineer",
+"trainee analytics", "exjobb data", "LIA praktik data".
+
+KATEGORI 2 — Teknikstack-sökord (6-8 sökord):
+Företag som söker dessa tekniker har datateam. Exempel: "dbt airflow", "databricks",
+"snowflake data", "business intelligence", "datawarehouse ETL", "Apache Spark",
+"Power BI analyst", "SQL data analyst".
+
+KATEGORI 3 — Rollnamn på svenska och engelska (6-8 sökord):
+Direkta yrkesbenämningar. Exempel: "data engineer", "dataingenjör", "BI-utvecklare",
+"analytics engineer", "datapipeline", "junior data analyst".
+
 Regler:
-- Fokusera på rollnamn och yrkesbenämningar
-- Inkludera junior/praktik/trainee-varianter
-- Undvik för breda ord som bara "data" eller "analytics"
 - Varje sökord ska vara 1-4 ord
+- Blanda svenska och engelska
+- Undvik för breda ord som bara "data" eller "IT"
 
 Svara ENBART med ett JSON-objekt:
-{{"keywords": ["sökord1", "sökord2", "sökord3"]}}"""
+{{"keywords": ["sökord1", "sökord2", ...]}}"""
 
     try:
         import ollama as _ol, re, json
@@ -369,10 +382,14 @@ def suggest_keywords(background_tasks: BackgroundTasks):
     prompt = f"""Du hjälper en Data Engineering-student att hitta LIA-praktik i Sverige.
 Nuvarande sökord: {current}
 
-Föreslå 8 ytterligare svenska och engelska sökord för JobTech API:s söktjänst som INTE redan finns i listan ovan.
-Fokusera på: praktikroller, trainee-program, junior positioner inom data/BI/analytics.
+Föreslå 10 ytterligare sökord för JobTech API:s söktjänst som INTE redan finns i listan ovan.
+Täck in minst två av dessa vinklar som saknas i nuvarande lista:
+- LIA/praktik-specifika: "LIA data", "praktikant BI", "trainee data engineer"
+- Teknikstack: "dbt", "databricks", "snowflake", "Apache Kafka", "Looker", "Tableau"
+- Angränsande roller med datainslag: "junior backend python", "systemutvecklare data"
+
 Svara ENBART med ett JSON-objekt:
-{{"suggestions": ["sökord1", "sökord2", "sökord3", "sökord4", "sökord5", "sökord6", "sökord7", "sökord8"]}}"""
+{{"suggestions": ["sökord1", "sökord2", "sökord3", "sökord4", "sökord5", "sökord6", "sökord7", "sökord8", "sökord9", "sökord10"]}}"""
 
     try:
         import ollama as _ol, re, json
@@ -495,6 +512,14 @@ def analyze_job(job_id: int, background_tasks: BackgroundTasks):
     return {"ok": True, "job_id": job_id, "message": "Analys startad i bakgrunden."}
 
 
+@app.delete("/jobs/all", tags=["Jobb"])
+def clear_all_jobs():
+    """Raderar ALLA jobb från databasen. Kan inte ångras."""
+    count = db.clear_all_jobs()
+    _log(f"Nuke all: {count} jobb raderade", "warn")
+    return {"ok": True, "deleted": count}
+
+
 def _analyze_single_job(job_id: int):
     job = db.get_job(job_id)
     if not job:
@@ -516,6 +541,8 @@ def _analyze_single_job(job_id: int):
             extra["relevant_period"] = analyzed["relevant_period"]
         if analyzed.get("start_date"):
             extra["start_date"] = analyzed["start_date"]
+        if analyzed.get("priority") in (1, 2, 3):
+            extra["priority"] = analyzed["priority"]
         if extra:
             db.patch_job(job_id, extra)
     except Exception as e:

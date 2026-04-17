@@ -65,7 +65,11 @@ Gå till **Sökord** och beskriv med egna ord vad du letar efter, t.ex:
 
 Lägg till extra kontext om du vill, t.ex. "Helst i Stockholm" eller "Intresserad av fintech".
 
-Klicka **"Generera sökord med AI"** — AI:n skapar 10–15 nyckelord anpassade till din beskrivning.
+Klicka **"Generera sökord med AI"** — AI:n skapar 18–22 nyckelord i tre kategorier:
+- **LIA/praktik-termer** — söker direkt efter praktikanter, t.ex. "LIA data", "trainee analytics"
+- **Teknikstack-ord** — företag som söker dessa tekniker har datateam, t.ex. "dbt airflow", "databricks"
+- **Rollnamn** — direkta yrkesbenämningar på svenska och engelska
+
 Du kan lägga till eller ta bort ord manuellt innan du sparar.
 
 ---
@@ -82,6 +86,13 @@ LiaBot gör nu tre saker i följd:
 
 Du ser realtidsloggar i Systemloggen på Dashboard. Sökningen tar vanligtvis 5–20 minuter.
 Du kan byta flik och göra annat — sökningen körs i bakgrunden.
+
+När sökningen är klar har varje relevant jobb en AI-prioritet:
+- 🔴 **Hög** — explicit LIA/praktik/trainee-roll, eller junior med datateam att växa i
+- 🟡 **Medium** — tydlig datarroll, värd att kontakta
+- ⚪ **Lång shot** — datainslag men otydlig LIA-koppling
+
+Vill du börja om från noll? Klicka på **papperskorgsikonen** bredvid "Starta ny sökning" — det raderar alla jobb permanent (inställningar och sökord påverkas inte).
 
 ---
 

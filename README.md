@@ -89,11 +89,19 @@ Ladda ned Ollama från [ollama.com](https://ollama.com/) eller installera direkt
 irm https://ollama.com/install.ps1 | iex
 ```
 
-Starta sedan Ollama (visas i systemfältet) och ladda ned AI-modellen (~2 GB):
+Starta sedan Ollama (visas i systemfältet) och ladda ned AI-modellen.
 
+Standard (~2 GB, snabb):
 ```powershell
 ollama pull llama3.2
 ```
+
+Rekommenderat för bättre träffsäkerhet (~5 GB, bättre resonemang):
+```powershell
+ollama pull llama3.1:8b
+```
+
+Om du väljer `llama3.1:8b`, ändra i `.env`: `OLLAMA_MODEL=llama3.1:8b`
 
 ### 5. Konfigurera inställningar (`.env`)
 
@@ -174,6 +182,28 @@ LiaBot/
     ├── web_scraper.py  # Skrapar karriärsidor
     └── job_boards.py   # Svenska jobbsajter + standardkällor
 ```
+
+---
+
+## AI-modell och sökkvalitet
+
+LiaBot använder Ollama för att analysera varje jobbannons. Standard är `llama3.2` (3B) som är snabb men begränsad. För bättre träffsäkerhet rekommenderas en större modell:
+
+```powershell
+ollama pull llama3.1:8b   # rekommenderas — bra balans mellan hastighet och kvalitet
+```
+
+Byt sedan modell i **Inställningar** (eller i `.env`): `OLLAMA_MODEL=llama3.1:8b`
+
+**Vad AI:n bedömer:**
+- **Relevant** — är rollen LIA-lämplig (Data Engineer, BI-analytiker, Analytics Engineer, etc.)
+- **Prioritet** — 🔴 hög (explicit LIA/junior), 🟡 medium (värd att kontakta), ⚪ lång shot
+- **Cold contact** — har företaget ett eget datateam som troligen tar emot praktikanter?
+
+**Sökordsstrategin täcker tre kategorier:**
+1. LIA/praktik-termer: "LIA data", "trainee analytics", "praktikant data engineer"
+2. Teknikstack: "dbt airflow", "databricks", "snowflake", "Power BI analyst"
+3. Rollnamn på svenska och engelska
 
 ---
 

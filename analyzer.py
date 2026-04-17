@@ -55,7 +55,7 @@ def analyze_job(job: dict) -> dict:
       - AI-highlight, prerequisites, kontaktinfo, period, startdatum
     """
     title = job.get("job_title", "")
-    description = (job.get("job_description") or "")[:2500]
+    description = (job.get("job_description") or "")[:4000]
 
     prompt = f"""Du bedömer en jobbannons för en Data Engineering-student som söker LIA-praktik
 (6 månader, december–maj) i Stockholm eller på distans.
@@ -68,6 +68,7 @@ Annonstext:
 Svara ENBART med ett JSON-objekt:
 {{
   "relevant": true/false,
+  "priority": 1/2/3,
   "cold_contact": true/false,
   "reason": "Max 2 meningar på svenska om varför relevant eller ej.",
   "ai_highlight": "De 2-3 meningar ur annonsen som bäst motiverar relevansen, eller null om ej relevant.",
@@ -79,14 +80,26 @@ Svara ENBART med ett JSON-objekt:
 }}
 
 REGLER för relevant:
-- true om: Data Engineer, Data Analyst, BI-utvecklare, Analytics Engineer, ETL/ELT, datapipeline, praktikant/trainee inom data.
-- false om: mjukvaruutvecklare utan datafokus, säljare, ekonom, HR, kundtjänst.
+- true om rollen primärt handlar om: Data Engineer, Data Analyst, BI-utvecklare, Analytics Engineer,
+  ETL/ELT, datapipeline, datawarehouse, dataingenjör, praktikant/trainee inom data.
+- true även om: jobbtiteln är generisk men annonsen nämner datapipelines, warehouse, dbt, Airflow,
+  Spark, BI-verktyg, SQL-tung analys, eller att man bygger intern dataplattform.
+- false om: mjukvaruutvecklare utan datafokus, säljare, ekonom, HR, kundtjänst,
+  systemadministratör utan dataarbete.
+
+REGLER för priority (sätt alltid, gäller framförallt när relevant=true):
+- 1 (hög): Explicit LIA/praktik/trainee-roll ELLER junior-nivå med datateam att växa i.
+- 2 (medium): Tydlig datarroll men inget explicit om praktik/junior — värd att kontakta.
+- 3 (lång shot): Datainslag men otydlig LIA-koppling, kräver 3+ år, eller väldigt generell roll.
+  Använd 2 om relevant=false men cold_contact=true, annars 3.
 
 REGLER för cold_contact (oberoende av relevant):
 - true om: företaget har ett eget datateam och TROLIGEN kan ta emot en 6-månaders praktikant.
-  Tecken: nämner internt datateam, data platform, warehouse, dashboards som egna produkter.
-- false om: konsultbolag som rekryterar åt okänd kund, inget datateam nämns,
-  eller rollen kräver 5+ år erfarenhet utan junior-spår."""
+  Tecken: nämner internt datateam, data platform, warehouse, dashboards som interna produkter,
+  eller är ett techbolag/produktbolag med tydlig datadriven kultur.
+- true även för konsultbolag som har eget internt datateam (inte bara förmedlar konsulter).
+- false om: ren bemanningsfirma som rekryterar åt okänd kund utan eget datateam,
+  inget datateam nämns alls, eller rollen kräver 5+ år utan junior/trainee-spår."""
 
     try:
         response = _call_ollama(prompt)
@@ -96,10 +109,15 @@ REGLER för cold_contact (oberoende av relevant):
         if email and "@" not in email:
             email = None
 
+        is_relevant = bool(data.get("relevant", False))
+        raw_priority = data.get("priority")
+        priority = int(raw_priority) if raw_priority in (1, 2, 3) else (2 if is_relevant else 3)
+
         return {
             **job,
-            "is_relevant":    bool(data.get("relevant", False)),
+            "is_relevant":    is_relevant,
             "cold_contact":   bool(data.get("cold_contact", False)),
+            "priority":       priority,
             "relevance_note": data.get("reason") or "",
             "ai_highlight":   data.get("ai_highlight") or None,
             "prerequisites":  data.get("prerequisites") or None,

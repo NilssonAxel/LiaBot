@@ -288,6 +288,18 @@ def mark_emailed(job_id: int):
     conn.close()
 
 
+def clear_all_jobs() -> int:
+    """Raderar alla jobb från databasen. Returnerar antal borttagna rader."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM jobs;")
+    count = cur.rowcount
+    conn.commit()
+    cur.close()
+    conn.close()
+    return count
+
+
 def count_jobs(relevant_only: bool = False, uncontacted_only: bool = False) -> int:
     conn = get_conn()
     cur = conn.cursor()
