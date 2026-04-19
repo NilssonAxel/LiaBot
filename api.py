@@ -308,6 +308,37 @@ def update_keywords(body: KeywordsIn):
     return {"keywords": cleaned}
 
 
+class LocationsIn(BaseModel):
+    locations: list[str]
+
+
+@app.get("/locations", tags=["Sökord"])
+def get_locations():
+    """Returnerar tillgängliga platser och vilka som är valda."""
+    raw = os.getenv("SEARCH_LOCATIONS", "")
+    selected = [loc.strip() for loc in raw.split(",") if loc.strip()]
+    if not selected:
+        selected = jobtech.DEFAULT_LOCATIONS
+    return {
+        "available": jobtech.AVAILABLE_LOCATIONS,
+        "selected":  selected,
+    }
+
+
+@app.put("/locations", tags=["Sökord"])
+def update_locations(body: LocationsIn):
+    """Sparar vilka platser som ska sökas (uppdaterar .env)."""
+    valid_ids = {loc["id"] for loc in jobtech.AVAILABLE_LOCATIONS}
+    cleaned = [loc.strip() for loc in body.locations if loc.strip() in valid_ids]
+    if not cleaned:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Minst en giltig plats krävs")
+    value = ",".join(cleaned)
+    os.environ["SEARCH_LOCATIONS"] = value
+    _write_env_var("SEARCH_LOCATIONS", value)
+    return {"selected": cleaned}
+
+
 class IntentIn(BaseModel):
     intent: str
     extra_context: Optional[str] = None
@@ -583,8 +614,15 @@ def _run_search(use_ai: bool = True):
             _log(f"Ollama-modellen '{os.getenv('OLLAMA_MODEL')}' hittades inte. Sparar utan AI-analys.", "error")
             use_ai = False
 
-        _log("Hämtar från JobTech (Stockholm + distans + hela Sverige)...", "search")
-        jobs = jobtech.fetch_all(keywords, stop_flag=_stop_flag)
+        locations_raw = os.getenv("SEARCH_LOCATIONS", "")
+        locations = [loc.strip() for loc in locations_raw.split(",") if loc.strip()] or jobtech.DEFAULT_LOCATIONS
+        location_labels = ", ".join(
+            next((l["label"] for l in jobtech.AVAILABLE_LOCATIONS if l["id"] == loc), loc)
+            for loc in locations
+        )
+        known_ids = db.get_known_source_ids("jobtech")
+        _log(f"Hämtar från JobTech ({location_labels}) — {len(known_ids)} redan kända annonser hoppas över...", "search")
+        jobs = jobtech.fetch_all(keywords, locations=locations, known_ids=known_ids, stop_flag=_stop_flag)
         _log(f"JobTech: {len(jobs)} annonser hämtade", "search")
 
         if not _stop_flag[0]:

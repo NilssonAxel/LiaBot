@@ -482,6 +482,17 @@ def get_search_progress(run_id: str) -> list[dict]:
     return rows
 
 
+def get_known_source_ids(source: str = "jobtech") -> set[str]:
+    """Returnerar alla source_id:n vi redan har för en given källa."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT source_id FROM jobs WHERE source = %s AND source_id IS NOT NULL;", (source,))
+    ids = {row[0] for row in cur.fetchall()}
+    cur.close()
+    conn.close()
+    return ids
+
+
 def count_unanalyzed() -> int:
     """Antal jobb som saknar Ollama-analys (is_relevant IS NULL)."""
     conn = get_conn()

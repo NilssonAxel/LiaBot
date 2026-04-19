@@ -14,17 +14,29 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 JOBTECH_BASE = "https://jobsearch.api.jobtechdev.se"
 STOCKHOLM_MUNICIPALITY = "0180"  # Stockholms stad
+STOCKHOLM_REGION = "01"          # Stockholms Län — täcker hela länet inkl. Nacka, Solna, Lidingö m.fl.
 PAGE_SIZE = 100
 MAX_RESULTS_PER_QUERY = 2000
+
+# Alla tillgängliga platser — visas i frontend
+AVAILABLE_LOCATIONS: list[dict] = [
+    {"id": "stockholm",        "label": "Stockholm (stad)",    "description": "Stockholms stad (municipality 0180)"},
+    {"id": "stockholm_region", "label": "Nära Stockholm",      "description": "Stockholms Län — inkl. Nacka, Solna, Sundbyberg, Lidingö m.fl."},
+    {"id": "remote",           "label": "Distansarbete",       "description": "Jobb med remote-flagga"},
+    {"id": "sweden",           "label": "Hela Sverige",        "description": "Ingen geografisk begränsning"},
+]
+
+DEFAULT_LOCATIONS = ["stockholm", "remote", "sweden"]
 
 
 def _fetch_page(keyword: str, offset: int, location: str) -> dict:
     """
     Hämtar en sida med träffar.
-    location = 'stockholm' | 'remote' | 'sweden'
-      - stockholm: Stockholms stad (municipality 0180)
-      - remote:    distansarbete (remote=true)
-      - sweden:    hela Sverige utan geografiskt filter — fångar Göteborg, Malmö, etc.
+    location = 'stockholm' | 'stockholm_region' | 'remote' | 'sweden'
+      - stockholm:        Stockholms stad (municipality 0180)
+      - stockholm_region: Stockholms Län (region 01) — nära Stockholm
+      - remote:           distansarbete (remote=true)
+      - sweden:           hela Sverige utan geografiskt filter
     """
     if location == "stockholm":
         params = {
@@ -33,6 +45,14 @@ def _fetch_page(keyword: str, offset: int, location: str) -> dict:
             "offset":       offset,
             "limit":        PAGE_SIZE,
             "sort":         "pubdate-desc",
+        }
+    elif location == "stockholm_region":
+        params = {
+            "q":      keyword,
+            "region": STOCKHOLM_REGION,
+            "offset": offset,
+            "limit":  PAGE_SIZE,
+            "sort":   "pubdate-desc",
         }
     elif location == "remote":
         params = {
@@ -111,15 +131,23 @@ def _normalize_hit(hit: dict, is_remote_search: bool = False) -> dict:
 
 def fetch_all(
     keywords: list[str],
+    locations: list[str] | None = None,
+    known_ids: set[str] | None = None,
     resume_state: dict | None = None,
     on_page: Callable | None = None,
     stop_flag: list | None = None,
 ) -> list[dict]:
     """
-    Hämtar alla annonser för en lista sökord (Stockholm + distans).
+    Hämtar alla annonser för en lista sökord och valda platser.
 
     Args:
         keywords:     Lista sökord
+        locations:    Lista plats-ID:n att söka på. Tillgängliga: 'stockholm',
+                      'stockholm_region', 'remote', 'sweden'.
+                      Standard: DEFAULT_LOCATIONS om inget anges.
+        known_ids:    Set av source_id:n som redan finns i databasen. Om en hel sida
+                      består av kända jobb stoppar vi pagineringen tidigt — ny content
+                      kommer alltid först eftersom JobTech sorterar på pubdate-desc.
         resume_state: Dict {(keyword, location): last_offset} — börja om från dessa offsets.
                       Om en kombination är markerad 'completed' (offset >= total) hoppas den över.
         on_page:      Callback(keyword, location, page_num, total_pages, new_jobs) — anropas per sida.
@@ -132,12 +160,16 @@ def fetch_all(
         stop_flag = [False]
     if resume_state is None:
         resume_state = {}
+    if locations is None:
+        locations = DEFAULT_LOCATIONS
+    if known_ids is None:
+        known_ids = set()
 
     seen_ids: set[str] = set()
     results: list[dict] = []
 
     for keyword in keywords:
-        for location in ("stockholm", "remote", "sweden"):
+        for location in locations:
             if stop_flag[0]:
                 return results
 
@@ -168,19 +200,31 @@ def fetch_all(
                 total_pages = max(1, -(-total // PAGE_SIZE))  # ceil division
 
                 page_jobs = []
+                all_known = bool(hits)  # becomes False if no hits
                 for hit in hits:
                     job = _normalize_hit(hit, is_remote_search=(location == "remote"))
                     sid = job["source_id"]
                     if sid and sid not in seen_ids:
                         seen_ids.add(sid)
-                        results.append(job)
-                        page_jobs.append(job)
+                        if sid not in known_ids:
+                            all_known = False
+                            results.append(job)
+                            page_jobs.append(job)
+                        # else: already in DB — don't add, but keep all_known check going
+                    else:
+                        all_known = False  # empty/dup source_id — don't stop
 
                 if on_page:
                     on_page(keyword, location, page_num, total_pages, page_jobs)
 
                 offset += len(hits)
                 page_num += 1
+
+                # Stop early if the entire page was jobs we already have.
+                # Since JobTech sorts newest-first, once we hit a full page of
+                # known jobs there's nothing new further back.
+                if all_known:
+                    break
 
                 completed = (offset >= total or offset >= MAX_RESULTS_PER_QUERY or not hits)
                 if completed:
